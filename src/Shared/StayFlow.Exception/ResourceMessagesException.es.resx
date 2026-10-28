@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="UNKNOWN_ERROR" xml:space="preserve">
+    <value>Ocurrió un error desconocido.</value>
+  </data>
+  <data name="VALIDATION_REQUEST_INVALID" xml:space="preserve">
+    <value>La solicitud no es válida.</value>
+  </data>
+  <data name="VALIDATION_ACCESS_TOKEN_REQUIRED" xml:space="preserve">
+    <value>Debe iniciar sesión para acceder a este recurso.</value>
+  </data>
+  <data name="VALIDATION_RESOURCE_TOKEN_DENIED" xml:space="preserve">
+    <value>Acceso denegado: token inválido.</value>
+  </data>
+  <data name="VALIDATION_ACCESS_FORBIDDEN" xml:space="preserve">
+    <value>No tiene permiso para realizar esta acción.</value>
+  </data>
+  <data name="VALIDATION_LOGIN_INVALID" xml:space="preserve">
+    <value>Correo o contraseña inválidos.</value>
+  </data>
+  <data name="VALIDATION_NAME_REQUIRED" xml:space="preserve">
+    <value>El nombre es obligatorio.</value>
+  </data>
+  <data name="VALIDATION_EMAIL_REQUIRED" xml:space="preserve">
+    <value>El correo es obligatorio.</value>
+  </data>
+  <data name="VALIDATION_EMAIL_INVALID" xml:space="preserve">
+    <value>El correo no es válido.</value>
+  </data>
+  <data name="VALIDATION_EMAIL_MAX_LENGTH" xml:space="preserve">
+    <value>El correo debe tener como máximo 254 caracteres.</value>
+  </data>
+  <data name="VALIDATION_EMAIL_ALREADY_EXISTS" xml:space="preserve">
+    <value>Este correo ya está registrado.</value>
+  </data>
+  <data name="VALIDATION_PASSWORD_REQUIRED" xml:space="preserve">
+    <value>La contraseña es obligatoria.</value>
+  </data>
+  <data name="VALIDATION_PASSWORD_MIN_LENGTH" xml:space="preserve">
+    <value>La contraseña debe tener al menos 8 caracteres.</value>
+  </data>
+  <data name="VALIDATION_PASSWORD_UPPERCASE_REQUIRED" xml:space="preserve">
+    <value>La contraseña debe contener una letra mayúscula.</value>
+  </data>
+  <data name="VALIDATION_PASSWORD_LOWERCASE_REQUIRED" xml:space="preserve">
+    <value>La contraseña debe contener una letra minúscula.</value>
+  </data>
+  <data name="VALIDATION_PASSWORD_NUMBER_REQUIRED" xml:space="preserve">
+    <value>La contraseña debe contener un número.</value>
+  </data>
+  <data name="VALIDATION_PASSWORD_SPECIAL_CHARACTER_REQUIRED" xml:space="preserve">
+    <value>La contraseña debe contener un carácter especial.</value>
+  </data>
+  <data name="VALIDATION_HOTEL_NAME_REQUIRED" xml:space="preserve">
+    <value>El nombre del hotel es obligatorio.</value>
+  </data>
+  <data name="VALIDATION_CITY_REQUIRED" xml:space="preserve">
+    <value>La ciudad es obligatoria.</value>
+  </data>
+  <data name="VALIDATION_ROOM_NUMBER_REQUIRED" xml:space="preserve">
+    <value>El número de habitación es obligatorio.</value>
+  </data>
+  <data name="VALIDATION_ROOM_NUMBER_ALREADY_EXISTS" xml:space="preserve">
+    <value>Ya existe una habitación con este número.</value>
+  </data>
+  <data name="VALIDATION_ROOM_TYPE_INVALID" xml:space="preserve">
+    <value>El tipo de habitación no es válido.</value>
+  </data>
+  <data name="VALIDATION_ROOM_CAPACITY_INVALID" xml:space="preserve">
+    <value>La capacidad debe estar entre 1 y 10.</value>
+  </data>
+  <data name="VALIDATION_ROOM_RATE_INVALID" xml:space="preserve">
+    <value>La tarifa por noche debe ser mayor que cero.</value>
+  </data>
+  <data name="VALIDATION_ROOM_STATUS_INVALID" xml:space="preserve">
+    <value>El estado de la habitación no es válido.</value>
+  </data>
+  <data name="VALIDATION_GUEST_DOCUMENT_REQUIRED" xml:space="preserve">
+    <value>El documento del huésped es obligatorio.</value>
+  </data>
+  <data name="VALIDATION_GUEST_DOCUMENT_ALREADY_EXISTS" xml:space="preserve">
+    <value>Ya existe un huésped con este documento.</value>
+  </data>
+  <data name="VALIDATION_PHONE_REQUIRED" xml:space="preserve">
+    <value>El teléfono es obligatorio.</value>
+  </data>
+  <data name="VALIDATION_DATES_INVALID" xml:space="preserve">
+    <value>El check-out debe ser posterior al check-in.</value>
+  </data>
+  <data name="VALIDATION_CHECKIN_IN_PAST" xml:space="preserve">
+    <value>El check-in no puede estar en el pasado.</value>
+  </data>
+  <data name="VALIDATION_STAY_TOO_LONG" xml:space="preserve">
+    <value>Una estancia no puede superar las 30 noches.</value>
+  </data>
+  <data name="VALIDATION_ADULTS_INVALID" xml:space="preserve">
+    <value>Se requiere al menos un adulto.</value>
+  </data>
+  <data name="VALIDATION_CHILDREN_INVALID" xml:space="preserve">
+    <value>El número de niños no es válido.</value>
+  </data>
+  <data name="VALIDATION_PAGE_INVALID" xml:space="preserve">
+    <value>La página debe ser mayor que cero.</value>
+  </data>
+  <data name="VALIDATION_PAGE_SIZE_INVALID" xml:space="preserve">
+    <value>El tamaño de página debe estar entre 1 y 100.</value>
+  </data>
+  <data name="VALIDATION_RESERVATION_STATUS_INVALID" xml:space="preserve">
+    <value>El estado de la reserva no es válido.</value>
+  </data>
+  <data name="ROOM_NOT_FOUND" xml:space="preserve">
+    <value>Habitación no encontrada.</value>
+  </data>
+  <data name="GUEST_NOT_FOUND" xml:space="preserve">
+    <value>Huésped no encontrado.</value>
+  </data>
+  <data name="RESERVATION_NOT_FOUND" xml:space="preserve">
+    <value>Reserva no encontrada.</value>
+  </data>
+  <data name="ROOM_NOT_AVAILABLE" xml:space="preserve">
+    <value>La habitación ya está reservada para las fechas seleccionadas.</value>
+  </data>
+  <data name="ROOM_UNDER_MAINTENANCE" xml:space="preserve">
+    <value>La habitación está en mantenimiento.</value>
+  </data>
+  <data name="ROOM_CAPACITY_EXCEEDED" xml:space="preserve">
+    <value>El número de huéspedes supera la capacidad de la habitación.</value>
+  </data>
+  <data name="RESERVATION_CANNOT_CHECK_IN" xml:space="preserve">
+    <value>El check-in solo se permite para reservas confirmadas dentro del período de la estancia.</value>
+  </data>
+  <data name="RESERVATION_CANNOT_CHECK_OUT" xml:space="preserve">
+    <value>El check-out solo se permite para reservas con check-in realizado.</value>
+  </data>
+  <data name="RESERVATION_CANNOT_CANCEL" xml:space="preserve">
+    <value>Solo se pueden cancelar reservas confirmadas.</value>
+  </data>
+  <data name="CONCURRENCY_CONFLICT" xml:space="preserve">
+    <value>Este registro fue modificado por otro usuario. Inténtelo de nuevo.</value>
+  </data>
+  <data name="TOO_MANY_REQUESTS" xml:space="preserve">
+    <value>Demasiados intentos. Espere un minuto e inténtelo de nuevo.</value>
+  </data>
+</root>

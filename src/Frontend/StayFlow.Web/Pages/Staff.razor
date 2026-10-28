@@ -1,0 +1,81 @@
+@page "/staff"
+@attribute [Authorize(Policy = "ManagerOnly")]
+@inherits LocalizedComponent
+@inject ApiClient Api
+@inject ToastService Toasts
+
+<PageTitle>@L["nav.staff"] · StayFlow</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>@L["nav.staff"]</h1>
+        <p class="muted">@L["staff.subtitle"]</p>
+    </div>
+    <button class="btn btn-primary" @onclick="() => { _form = new(); _errors = []; _open = true; }">＋ @L["staff.add"]</button>
+</div>
+
+<section class="card table-card">
+    @if (_staff is null)
+    {
+        <div class="boot"><div class="spinner"></div></div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>@L["field.name"]</th><th>@L["field.email"]</th><th>@L["staff.role"]</th><th>@L["staff.since"]</th></tr></thead>
+            <tbody>
+                @foreach (var member in _staff)
+                {
+                    <tr>
+                        <td><strong>@member.Name</strong></td>
+                        <td>@member.Email</td>
+                        <td><span class="badge @(member.Role == UserRole.Manager ? "badge-blue" : "badge-gray")">@L.Enum(member.Role)</span></td>
+                        <td>@member.CreatedAt.ToLocalTime().ToString("d", System.Globalization.CultureInfo.CurrentCulture)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<Modal @bind-Open="_open" Title="@L["staff.new"]">
+    <ErrorList Errors="_errors" />
+    <EditForm Model="_form" OnSubmit="Save" FormName="staff">
+        <label>@L["field.name"] <InputText @bind-Value="_form.Name" /></label>
+        <label>@L["field.email"] <InputText @bind-Value="_form.Email" type="email" /></label>
+        <label>@L["staff.tempPassword"] <InputText @bind-Value="_form.Password" type="password" autocomplete="new-password" /></label>
+        <button class="btn btn-primary btn-block" disabled="@_busy">@L["action.create"]</button>
+    </EditForm>
+</Modal>
+
+@code {
+    private List<ResponseStaffMemberJson>? _staff;
+    private bool _open;
+    private RequestRegisterStaffJson _form = new();
+    private IReadOnlyList<string> _errors = [];
+    private bool _busy;
+
+    protected override Task OnInitializedAsync() => Load();
+
+    private async Task Load()
+    {
+        try { _staff = await Api.GetAsync<List<ResponseStaffMemberJson>>("api/users/staff"); }
+        catch (Exception ex) { Toasts.Error(ex); }
+    }
+
+    private async Task Save()
+    {
+        _busy = true;
+        _errors = [];
+        try
+        {
+            await Api.PostAsync<ResponseCreatedJson>("api/users/staff", _form);
+            _open = false;
+            Toasts.Success(L["toast.staffCreated"]);
+            await Load();
+        }
+        catch (ApiException ex) { _errors = ex.Errors; }
+        catch (Exception ex) { Toasts.Error(ex); }
+        finally { _busy = false; }
+    }
+}

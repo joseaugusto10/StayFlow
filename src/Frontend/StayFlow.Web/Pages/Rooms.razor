@@ -1,0 +1,140 @@
+@page "/rooms"
+@attribute [Authorize]
+@inherits LocalizedComponent
+@inject ApiClient Api
+@inject ToastService Toasts
+
+<PageTitle>@L["nav.rooms"] · StayFlow</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>@L["nav.rooms"]</h1>
+        <p class="muted">@L.F("rooms.summary", _rooms?.Count ?? 0, _rooms?.Count(r => r.Status == RoomStatus.Maintenance) ?? 0)</p>
+    </div>
+    <AuthorizeView Policy="ManagerOnly">
+        <button class="btn btn-primary" @onclick="() => OpenEditor(null)">＋ @L["rooms.add"]</button>
+    </AuthorizeView>
+</div>
+
+@if (_rooms is null)
+{
+    <div class="boot"><div class="spinner"></div></div>
+}
+else
+{
+    <div class="room-grid">
+        @foreach (var room in _rooms)
+        {
+            <div class="card room-card @(room.Status == RoomStatus.Maintenance ? "maintenance" : "")">
+                <div class="room-top">
+                    <strong class="room-number">@room.Number</strong>
+                    <span class="badge @(room.Status == RoomStatus.Available ? "badge-green" : "badge-amber")">@L.Enum(room.Status)</span>
+                </div>
+                <div>@L.Enum(room.Type) · @L.F("rooms.floor", room.Floor) · @L.F("rooms.upTo", room.Capacity)</div>
+                <small class="muted">@room.Description</small>
+                <div class="room-bottom">
+                    <strong>@Format.Money(room.NightlyRate)<small class="muted">@L["common.perNight"]</small></strong>
+                    <div class="actions">
+                        <button class="btn btn-ghost btn-sm" @onclick="() => ToggleMaintenance(room)">
+                            @(room.Status == RoomStatus.Available ? L["rooms.block"] : L["rooms.release"])
+                        </button>
+                        <AuthorizeView Policy="ManagerOnly">
+                            <button class="btn btn-ghost btn-sm" @onclick="() => OpenEditor(room)">@L["action.edit"]</button>
+                        </AuthorizeView>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<Modal @bind-Open="_editorOpen" Title="@(_editingId is null ? L["rooms.new"] : L["rooms.edit"])">
+    <ErrorList Errors="_errors" />
+    <EditForm Model="_form" OnSubmit="Save" FormName="room">
+        <div class="grid-2">
+            <label>@L["field.number"] <InputText @bind-Value="_form.Number" /></label>
+            <label>@L["field.floor"] <InputNumber @bind-Value="_form.Floor" /></label>
+        </div>
+        <div class="grid-2">
+            <label>@L["field.type"]
+                <InputSelect @bind-Value="_form.Type">
+                    @foreach (var type in Enum.GetValues<RoomType>())
+                    {
+                        <option value="@type">@L.Enum(type)</option>
+                    }
+                </InputSelect>
+            </label>
+            <label>@L["field.capacity"] <InputNumber @bind-Value="_form.Capacity" /></label>
+        </div>
+        <label>@L["field.nightlyRate"] <InputNumber @bind-Value="_form.NightlyRate" /></label>
+        <label>@L["field.description"] <InputText @bind-Value="_form.Description" /></label>
+        <button class="btn btn-primary btn-block" disabled="@_busy">@L["action.save"]</button>
+    </EditForm>
+</Modal>
+
+@code {
+    private List<ResponseRoomJson>? _rooms;
+    private bool _editorOpen;
+    private Guid? _editingId;
+    private RequestRoomJson _form = new();
+    private IReadOnlyList<string> _errors = [];
+    private bool _busy;
+
+    protected override Task OnInitializedAsync() => Load();
+
+    private async Task Load()
+    {
+        try { _rooms = await Api.GetAsync<List<ResponseRoomJson>>("api/rooms"); }
+        catch (Exception ex) { Toasts.Error(ex); }
+    }
+
+    private void OpenEditor(ResponseRoomJson? room)
+    {
+        _errors = [];
+        _editingId = room?.Id;
+        _form = room is null
+            ? new RequestRoomJson()
+            : new RequestRoomJson
+            {
+                Number = room.Number,
+                Floor = room.Floor,
+                Type = room.Type,
+                Capacity = room.Capacity,
+                NightlyRate = room.NightlyRate,
+                Description = room.Description
+            };
+        _editorOpen = true;
+    }
+
+    private async Task Save()
+    {
+        _busy = true;
+        _errors = [];
+        try
+        {
+            if (_editingId is null)
+                await Api.PostAsync<ResponseRoomJson>("api/rooms", _form);
+            else
+                await Api.PutAsync($"api/rooms/{_editingId}", _form);
+
+            _editorOpen = false;
+            Toasts.Success(L["toast.roomSaved"]);
+            await Load();
+        }
+        catch (ApiException ex) { _errors = ex.Errors; }
+        catch (Exception ex) { Toasts.Error(ex); }
+        finally { _busy = false; }
+    }
+
+    private async Task ToggleMaintenance(ResponseRoomJson room)
+    {
+        var status = room.Status == RoomStatus.Available ? RoomStatus.Maintenance : RoomStatus.Available;
+        try
+        {
+            await Api.PatchAsync($"api/rooms/{room.Id}/status", new RequestChangeRoomStatusJson { Status = status });
+            Toasts.Info(L.F("toast.roomStatus", room.Number, L.Enum(status)));
+            await Load();
+        }
+        catch (Exception ex) { Toasts.Error(ex); }
+    }
+}

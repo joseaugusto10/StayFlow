@@ -1,0 +1,221 @@
+@page "/reservations/new"
+@attribute [Authorize]
+@inherits LocalizedComponent
+@inject ApiClient Api
+@inject ToastService Toasts
+@inject NavigationManager Navigation
+
+<PageTitle>@L["nav.newBooking"] · StayFlow</PageTitle>
+
+<div class="page-head">
+    <div>
+        <a class="back" href="reservations">‹ @L["nav.reservations"]</a>
+        <h1>@L["nav.newBooking"]</h1>
+    </div>
+</div>
+
+<ol class="stepper">
+    <li class="@StepCss(1)">1 · @L["booking.step1"]</li>
+    <li class="@StepCss(2)">2 · @L["booking.step2"]</li>
+    <li class="@StepCss(3)">3 · @L["booking.step3"]</li>
+</ol>
+
+<ErrorList Errors="_errors" />
+
+<section class="card">
+    <div class="filters">
+        <label class="inline">@L["field.checkIn"] <input type="date" @bind="_search.CheckIn" min="@Today" /></label>
+        <label class="inline">@L["field.checkOut"] <input type="date" @bind="_search.CheckOut" min="@Today" /></label>
+        <label class="inline">@L["field.adults"] <input type="number" min="1" max="10" class="narrow" @bind="_adults" /></label>
+        <label class="inline">@L["field.children"] <input type="number" min="0" max="10" class="narrow" @bind="_children" /></label>
+        <button class="btn btn-primary" disabled="@_busy" @onclick="SearchRooms">@L["booking.checkAvailability"]</button>
+    </div>
+    <small class="muted">@L["booking.pricingRules"]</small>
+</section>
+
+@if (_rooms is not null)
+{
+    <section class="card">
+        <h2>@L.F("booking.roomsAvailable", _rooms.Count)</h2>
+        @if (_rooms.Count == 0)
+        {
+            <p class="muted">@L["booking.noRooms"]</p>
+        }
+        <div class="room-grid">
+            @foreach (var option in _rooms)
+            {
+                <button class="room-option @(_selected?.Room.Id == option.Room.Id ? "selected" : "")" @onclick="() => _selected = option">
+                    <div class="room-top">
+                        <strong>@L["common.room"] @option.Room.Number</strong>
+                        <span class="badge badge-gray">@L.Enum(option.Room.Type)</span>
+                    </div>
+                    <small class="muted">@option.Room.Description</small>
+                    <small>@L.F("rooms.upTo", option.Room.Capacity) · @Format.Money(option.Room.NightlyRate)@L["common.perNight"]</small>
+                    <div class="quote">
+                        <span>@L.F("common.nights", option.Quote.Nights)@(option.Quote.WeekendNights > 0 ? " · " + L.F("booking.weekendNights", option.Quote.WeekendNights) : "")</span>
+                        @if (option.Quote.Discount > 0)
+                        {
+                            <span class="discount">−@Format.Money(option.Quote.Discount)</span>
+                        }
+                        <strong>@Format.Money(option.Quote.Total)</strong>
+                    </div>
+                </button>
+            }
+        </div>
+    </section>
+}
+
+@if (_selected is not null)
+{
+    <section class="card">
+        <h2>@L["col.guest"]</h2>
+        <div class="filters">
+            <input placeholder="@L["guests.searchPlaceholder"]" @bind="_guestTerm" @bind:event="oninput" @bind:after="SearchGuests" />
+            <button class="btn btn-ghost" @onclick="() => _newGuestOpen = true">＋ @L["guests.new"]</button>
+        </div>
+
+        <div class="guest-list">
+            @foreach (var guest in _guests)
+            {
+                <label class="guest-option @(_guestId == guest.Id ? "selected" : "")">
+                    <input type="radio" name="guest" checked="@(_guestId == guest.Id)" @onchange="() => _guestId = guest.Id" />
+                    <div>
+                        <strong>@guest.Name</strong>
+                        <small class="muted">@guest.Document · @guest.Email</small>
+                    </div>
+                </label>
+            }
+        </div>
+
+        <label>@L["field.notes"] <textarea rows="2" @bind="_notes" placeholder="@L["booking.notesPlaceholder"]"></textarea></label>
+
+        <div class="confirm-bar">
+            <div>
+                @L["common.room"] <strong>@_selected.Room.Number</strong> · @Format.Date(_search.CheckIn) → @Format.Date(_search.CheckOut)
+                · <strong>@Format.Money(_selected.Quote.Total)</strong>
+            </div>
+            <button class="btn btn-primary" disabled="@(_busy || _guestId is null)" @onclick="Confirm">@L["booking.confirm"]</button>
+        </div>
+    </section>
+}
+
+<Modal @bind-Open="_newGuestOpen" Title="@L["guests.new"]">
+    <ErrorList Errors="_guestErrors" />
+    <EditForm Model="_newGuest" OnSubmit="CreateGuest" FormName="new-guest">
+        <label>@L["field.fullName"] <InputText @bind-Value="_newGuest.Name" /></label>
+        <div class="grid-2">
+            <label>@L["field.documentHint"] <InputText @bind-Value="_newGuest.Document" /></label>
+            <label>@L["field.nationality"] <InputText @bind-Value="_newGuest.Nationality" /></label>
+        </div>
+        <div class="grid-2">
+            <label>@L["field.email"] <InputText @bind-Value="_newGuest.Email" type="email" /></label>
+            <label>@L["field.phone"] <InputText @bind-Value="_newGuest.Phone" /></label>
+        </div>
+        <button class="btn btn-primary btn-block" disabled="@_busy">@L["guests.save"]</button>
+    </EditForm>
+</Modal>
+
+@code {
+    private readonly RequestAvailabilityJson _search = new()
+    {
+        CheckIn = DateOnly.FromDateTime(DateTime.Today),
+        CheckOut = DateOnly.FromDateTime(DateTime.Today.AddDays(2))
+    };
+
+    private int _adults = 2;
+    private int _children;
+    private List<ResponseAvailableRoomJson>? _rooms;
+    private ResponseAvailableRoomJson? _selected;
+    private List<ResponseGuestJson> _guests = [];
+    private string _guestTerm = string.Empty;
+    private Guid? _guestId;
+    private string? _notes;
+    private bool _newGuestOpen;
+    private RequestRegisterGuestJson _newGuest = new();
+    private IReadOnlyList<string> _errors = [];
+    private IReadOnlyList<string> _guestErrors = [];
+    private bool _busy;
+
+    private static string Today => DateTime.Today.ToString("yyyy-MM-dd");
+
+    private string StepCss(int step)
+    {
+        var current = _selected is not null ? 3 : _rooms is not null ? 2 : 1;
+        return step < current ? "done" : step == current ? "active" : "";
+    }
+
+    private async Task SearchRooms()
+    {
+        _busy = true;
+        _errors = [];
+        _selected = null;
+        try
+        {
+            _search.Guests = _adults + _children;
+            var query = $"api/rooms/availability?checkIn={_search.CheckIn:yyyy-MM-dd}&checkOut={_search.CheckOut:yyyy-MM-dd}&guests={_search.Guests}";
+            _rooms = await Api.GetAsync<List<ResponseAvailableRoomJson>>(query);
+            if (_guests.Count == 0)
+                await SearchGuests();
+        }
+        catch (ApiException ex) { _errors = ex.Errors; _rooms = null; }
+        catch (Exception ex) { Toasts.Error(ex); }
+        finally { _busy = false; }
+    }
+
+    private async Task SearchGuests()
+    {
+        try { _guests = await Api.GetAsync<List<ResponseGuestJson>>($"api/guests?term={Uri.EscapeDataString(_guestTerm)}"); }
+        catch (Exception ex) { Toasts.Error(ex); }
+    }
+
+    private async Task CreateGuest()
+    {
+        _busy = true;
+        _guestErrors = [];
+        try
+        {
+            var guest = await Api.PostAsync<ResponseGuestJson>("api/guests", _newGuest);
+            _guests.Insert(0, guest);
+            _guestId = guest.Id;
+            _newGuest = new();
+            _newGuestOpen = false;
+            Toasts.Success(L.F("toast.guestAdded", guest.Name));
+        }
+        catch (ApiException ex) { _guestErrors = ex.Errors; }
+        catch (Exception ex) { Toasts.Error(ex); }
+        finally { _busy = false; }
+    }
+
+    private async Task Confirm()
+    {
+        if (_selected is null || _guestId is null)
+            return;
+
+        _busy = true;
+        _errors = [];
+        try
+        {
+            var created = await Api.PostAsync<ResponseCreatedReservationJson>("api/reservations", new RequestCreateReservationJson
+            {
+                RoomId = _selected.Room.Id,
+                GuestId = _guestId.Value,
+                CheckInDate = _search.CheckIn,
+                CheckOutDate = _search.CheckOut,
+                Adults = _adults,
+                Children = _children,
+                Notes = _notes
+            });
+            Toasts.Success(L.F("toast.bookingConfirmed", created.Code, Format.Money(created.TotalAmount)));
+            Navigation.NavigateTo($"reservations/{created.Id}");
+        }
+        catch (ApiException ex)
+        {
+            _errors = ex.Errors;
+            // Someone else may have taken the room meanwhile: refresh availability.
+            if (ex.StatusCode is System.Net.HttpStatusCode.Conflict or System.Net.HttpStatusCode.UnprocessableEntity)
+                await SearchRooms();
+        }
+        catch (Exception ex) { Toasts.Error(ex); }
+        finally { _busy = false; }
+    }
+}

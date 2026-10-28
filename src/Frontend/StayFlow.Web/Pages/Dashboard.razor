@@ -1,0 +1,99 @@
+@page "/"
+@attribute [Authorize]
+@inherits LocalizedComponent
+@inject ApiClient Api
+@inject ToastService Toasts
+
+<PageTitle>@L["nav.dashboard"] · StayFlow</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>@L["dashboard.title"]</h1>
+        <p class="muted">@L["dashboard.subtitle"]</p>
+    </div>
+    <a class="btn btn-primary" href="reservations/new">＋ @L["nav.newBooking"]</a>
+</div>
+
+@if (_data is null)
+{
+    <div class="boot"><div class="spinner"></div></div>
+}
+else
+{
+    <section class="kpis">
+        <KpiCard Label="@L["kpi.occupancy"]" Value="@Format.Percent(_data.OccupancyRateToday)" Hint="@L.F("kpi.occupancyHint", _data.OccupiedToday, _data.TotalRooms)" />
+        <KpiCard Label="@L["kpi.inHouse"]" Value="@_data.GuestsInHouse.ToString()" Hint="@L["kpi.inHouseHint"]" />
+        <KpiCard Label="@L["kpi.revenue"]" Value="@Format.Money(_data.RevenueThisMonth)" Hint="@L["kpi.revenueHint"]" />
+        <KpiCard Label="ADR" Value="@Format.Money(_data.AverageDailyRate)" Hint="@L["kpi.adrHint"]" />
+        <KpiCard Label="RevPAR" Value="@Format.Money(_data.RevPar)" Hint="@L["kpi.revparHint"]" />
+    </section>
+
+    <section class="card">
+        <h2>@L["dashboard.forecast"]</h2>
+        <OccupancyChart Points="_data.OccupancyForecast" />
+    </section>
+
+    <div class="grid-2">
+        <section class="card">
+            <h2>@L["dashboard.arrivals"] <span class="count">@_data.ArrivalsToday.Count</span></h2>
+            @if (_data.ArrivalsToday.Count == 0)
+            {
+                <p class="muted">@L["dashboard.noArrivals"]</p>
+            }
+            @foreach (var item in _data.ArrivalsToday)
+            {
+                <div class="row-item">
+                    <div>
+                        <strong>@item.GuestName</strong>
+                        <small class="muted">@L["common.room"] @item.RoomNumber · @L.F("common.nights", item.Nights) · @item.Code</small>
+                    </div>
+                    <button class="btn btn-primary btn-sm" disabled="@_busy" @onclick='() => Act(item.Id, "check-in", L["toast.checkedIn"])'>@L["action.checkIn"]</button>
+                </div>
+            }
+        </section>
+
+        <section class="card">
+            <h2>@L["dashboard.departures"] <span class="count">@_data.DeparturesToday.Count</span></h2>
+            @if (_data.DeparturesToday.Count == 0)
+            {
+                <p class="muted">@L["dashboard.noDepartures"]</p>
+            }
+            @foreach (var item in _data.DeparturesToday)
+            {
+                <div class="row-item">
+                    <div>
+                        <strong>@item.GuestName</strong>
+                        <small class="muted">@L["common.room"] @item.RoomNumber · @Format.Money(item.TotalAmount)</small>
+                    </div>
+                    <button class="btn btn-sm" disabled="@_busy" @onclick='() => Act(item.Id, "check-out", L["toast.checkedOut"])'>@L["action.checkOut"]</button>
+                </div>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    private ResponseDashboardJson? _data;
+    private bool _busy;
+
+    protected override Task OnInitializedAsync() => Load();
+
+    private async Task Load()
+    {
+        try { _data = await Api.GetAsync<ResponseDashboardJson>("api/dashboard"); }
+        catch (Exception ex) { Toasts.Error(ex); }
+    }
+
+    private async Task Act(Guid id, string action, string message)
+    {
+        _busy = true;
+        try
+        {
+            await Api.PatchAsync($"api/reservations/{id}/{action}");
+            Toasts.Success(message);
+            await Load();
+        }
+        catch (Exception ex) { Toasts.Error(ex); }
+        finally { _busy = false; }
+    }
+}

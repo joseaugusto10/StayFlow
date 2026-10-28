@@ -1,0 +1,7 @@
+@inherits LocalizedComponent
+
+<span class="badge @Format.Css(Status)">@L.Enum(Status)</span>
+
+@code {
+    [Parameter, EditorRequired] public ReservationStatus Status { get; set; }
+}

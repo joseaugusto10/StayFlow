@@ -1,0 +1,130 @@
+@page "/reservations"
+@attribute [Authorize]
+@inherits LocalizedComponent
+@inject ApiClient Api
+@inject ToastService Toasts
+@inject NavigationManager Navigation
+
+<PageTitle>@L["nav.reservations"] · StayFlow</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>@L["nav.reservations"]</h1>
+        <p class="muted">@L.F("common.results", _result?.TotalCount ?? 0)</p>
+    </div>
+    <a class="btn btn-primary" href="reservations/new">＋ @L["nav.newBooking"]</a>
+</div>
+
+<section class="card filters">
+    <input placeholder="@L["reservations.searchPlaceholder"]" @bind="_filters.Search" @bind:event="oninput" @onkeyup="OnSearchKey" />
+    <select @bind="StatusFilter">
+        <option value="">@L["reservations.allStatuses"]</option>
+        @foreach (var status in Enum.GetValues<ReservationStatus>())
+        {
+            <option value="@status">@L.Enum(status)</option>
+        }
+    </select>
+    <label class="inline">@L["common.from"] <input type="date" @bind="_filters.From" @bind:after="Reload" /></label>
+    <label class="inline">@L["common.to"] <input type="date" @bind="_filters.To" @bind:after="Reload" /></label>
+    <button class="btn btn-ghost" @onclick="Clear">@L["action.clear"]</button>
+</section>
+
+<section class="card table-card">
+    @if (_result is null)
+    {
+        <div class="boot"><div class="spinner"></div></div>
+    }
+    else if (_result.Items.Count == 0)
+    {
+        <p class="muted pad">@L["reservations.empty"]</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>@L["col.code"]</th><th>@L["col.guest"]</th><th>@L["common.room"]</th><th>@L["col.stay"]</th>
+                    <th>@L["col.guests"]</th><th class="right">@L["col.total"]</th><th>@L["col.status"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _result.Items)
+                {
+                    <tr class="clickable" @onclick='() => Navigation.NavigateTo($"reservations/{item.Id}")'>
+                        <td><code>@item.Code</code></td>
+                        <td>@item.GuestName</td>
+                        <td>@item.RoomNumber</td>
+                        <td>@Format.Date(item.CheckInDate) → @Format.Date(item.CheckOutDate) <small class="muted">(@L.F("common.nights", item.Nights))</small></td>
+                        <td>@item.Guests</td>
+                        <td class="right">@Format.Money(item.TotalAmount)</td>
+                        <td><StatusBadge Status="item.Status" /></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="pager">
+            <button class="btn btn-ghost btn-sm" disabled="@(_filters.Page <= 1)" @onclick="() => GoTo(_filters.Page - 1)">‹ @L["pager.prev"]</button>
+            <span>@L.F("pager.pageOf", _result.Page, Math.Max(_result.TotalPages, 1))</span>
+            <button class="btn btn-ghost btn-sm" disabled="@(_filters.Page >= _result.TotalPages)" @onclick="() => GoTo(_filters.Page + 1)">@L["pager.next"] ›</button>
+        </div>
+    }
+</section>
+
+@code {
+    private RequestFiltersReservationsJson _filters = new() { PageSize = 10 };
+    private ResponseReservationsJson? _result;
+    private CancellationTokenSource? _debounce;
+
+    private string StatusFilter
+    {
+        get => _filters.Status?.ToString() ?? string.Empty;
+        set
+        {
+            _filters.Status = Enum.TryParse<ReservationStatus>(value, out var status) ? status : null;
+            _ = Reload();
+        }
+    }
+
+    protected override Task OnInitializedAsync() => Load();
+
+    private async Task OnSearchKey()
+    {
+        _debounce?.Cancel();
+        _debounce = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(350, _debounce.Token);
+            await Reload();
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private Task Reload()
+    {
+        _filters.Page = 1;
+        return Load();
+    }
+
+    private Task GoTo(int page)
+    {
+        _filters.Page = page;
+        return Load();
+    }
+
+    private Task Clear()
+    {
+        _filters = new() { PageSize = 10 };
+        return Load();
+    }
+
+    private async Task Load()
+    {
+        try
+        {
+            _result = await Api.PostAsync<ResponseReservationsJson>("api/reservations/search", _filters);
+            StateHasChanged();
+        }
+        catch (Exception ex) { Toasts.Error(ex); }
+    }
+}

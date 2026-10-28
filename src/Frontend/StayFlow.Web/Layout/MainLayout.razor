@@ -1,0 +1,60 @@
+@inherits LocalizedLayout
+@inject StayFlowAuthStateProvider AuthState
+@inject ApiClient Api
+@inject NavigationManager Navigation
+
+<div class="shell @(_menuOpen ? "menu-open" : "")">
+    <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">S</span> StayFlow</div>
+        <div class="hotel-name">@AuthState.CurrentUser?.HotelName</div>
+
+        <nav @onclick="() => _menuOpen = false">
+            <NavLink href="" Match="NavLinkMatch.All"><span class="ico">▦</span> @L["nav.dashboard"]</NavLink>
+            <NavLink href="reservations" Match="NavLinkMatch.All"><span class="ico">☰</span> @L["nav.reservations"]</NavLink>
+            <NavLink href="reservations/new"><span class="ico">＋</span> @L["nav.newBooking"]</NavLink>
+            <NavLink href="rooms"><span class="ico">⌂</span> @L["nav.rooms"]</NavLink>
+            <NavLink href="guests"><span class="ico">☺</span> @L["nav.guests"]</NavLink>
+            <AuthorizeView Policy="ManagerOnly">
+                <NavLink href="staff"><span class="ico">✦</span> @L["nav.staff"]</NavLink>
+            </AuthorizeView>
+        </nav>
+
+        <div class="user-box">
+            <div class="avatar">@Initials</div>
+            <div>
+                <strong>@AuthState.CurrentUser?.Name</strong>
+                <small>@(AuthState.CurrentUser is null ? "" : L.Enum(AuthState.CurrentUser.Role))</small>
+            </div>
+            <button class="icon-btn" title="@L["nav.signOut"]" @onclick="Logout">⎋</button>
+        </div>
+    </aside>
+
+    <main class="content">
+        <header class="topbar">
+            <button class="icon-btn menu-toggle" @onclick="() => _menuOpen = !_menuOpen">☰</button>
+            <span class="today">@Format.LongToday()</span>
+            <LanguageSwitcher Compact="true" />
+        </header>
+        <div class="page">
+            @Body
+        </div>
+    </main>
+</div>
+<ToastHost />
+
+@code {
+    private bool _menuOpen;
+
+    private string Initials =>
+        string.Concat((AuthState.CurrentUser?.Name ?? "?")
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(part => char.ToUpperInvariant(part[0])));
+
+    private async Task Logout()
+    {
+        try { await Api.PostAsync("api/auth/logout"); } catch { /* cookie may already be gone */ }
+        AuthState.SignOut();
+        Navigation.NavigateTo("login");
+    }
+}

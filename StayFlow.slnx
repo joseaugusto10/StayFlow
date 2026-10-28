@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Backend/">
+    <Project Path="src/Backend/StayFlow.Api/StayFlow.Api.csproj" />
+    <Project Path="src/Backend/StayFlow.Application/StayFlow.Application.csproj" />
+    <Project Path="src/Backend/StayFlow.Domain/StayFlow.Domain.csproj" />
+    <Project Path="src/Backend/StayFlow.Infrastructure/StayFlow.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Frontend/">
+    <Project Path="src/Frontend/StayFlow.Web/StayFlow.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/StayFlow.Communication/StayFlow.Communication.csproj" />
+    <Project Path="src/Shared/StayFlow.Exception/StayFlow.Exception.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/StayFlow.ArchitectureTests/StayFlow.ArchitectureTests.csproj" />
+    <Project Path="tests/StayFlow.UnitTests/StayFlow.UnitTests.csproj" />
+  </Folder>
+</Solution>

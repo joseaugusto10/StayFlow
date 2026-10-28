@@ -1,0 +1,102 @@
+@page "/guests"
+@attribute [Authorize]
+@inherits LocalizedComponent
+@inject ApiClient Api
+@inject ToastService Toasts
+
+<PageTitle>@L["nav.guests"] · StayFlow</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>@L["nav.guests"]</h1>
+        <p class="muted">@L["guests.subtitle"]</p>
+    </div>
+    <button class="btn btn-primary" @onclick="() => { _form = new(); _errors = []; _open = true; }">＋ @L["guests.new"]</button>
+</div>
+
+<section class="card filters">
+    <input placeholder="@L["guests.searchPlaceholder"]" @bind="_term" @bind:event="oninput" @bind:after="Load" />
+</section>
+
+<section class="card table-card">
+    @if (_guests is null)
+    {
+        <div class="boot"><div class="spinner"></div></div>
+    }
+    else if (_guests.Count == 0)
+    {
+        <p class="muted pad">@L["guests.empty"]</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>@L["field.name"]</th><th>@L["field.document"]</th><th>@L["field.email"]</th>
+                    <th>@L["field.phone"]</th><th>@L["field.nationality"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var guest in _guests)
+                {
+                    <tr>
+                        <td><strong>@guest.Name</strong></td>
+                        <td>@guest.Document</td>
+                        <td>@guest.Email</td>
+                        <td>@guest.Phone</td>
+                        <td>@guest.Nationality</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<Modal @bind-Open="_open" Title="@L["guests.new"]">
+    <ErrorList Errors="_errors" />
+    <EditForm Model="_form" OnSubmit="Save" FormName="guest">
+        <label>@L["field.fullName"] <InputText @bind-Value="_form.Name" /></label>
+        <div class="grid-2">
+            <label>@L["field.document"] <InputText @bind-Value="_form.Document" /></label>
+            <label>@L["field.nationality"] <InputText @bind-Value="_form.Nationality" /></label>
+        </div>
+        <div class="grid-2">
+            <label>@L["field.email"] <InputText @bind-Value="_form.Email" type="email" /></label>
+            <label>@L["field.phone"] <InputText @bind-Value="_form.Phone" /></label>
+        </div>
+        <button class="btn btn-primary btn-block" disabled="@_busy">@L["action.save"]</button>
+    </EditForm>
+</Modal>
+
+@code {
+    private List<ResponseGuestJson>? _guests;
+    private string _term = string.Empty;
+    private bool _open;
+    private RequestRegisterGuestJson _form = new();
+    private IReadOnlyList<string> _errors = [];
+    private bool _busy;
+
+    protected override Task OnInitializedAsync() => Load();
+
+    private async Task Load()
+    {
+        try { _guests = await Api.GetAsync<List<ResponseGuestJson>>($"api/guests?term={Uri.EscapeDataString(_term)}"); }
+        catch (Exception ex) { Toasts.Error(ex); }
+    }
+
+    private async Task Save()
+    {
+        _busy = true;
+        _errors = [];
+        try
+        {
+            await Api.PostAsync<ResponseGuestJson>("api/guests", _form);
+            _open = false;
+            Toasts.Success(L["toast.guestRegistered"]);
+            await Load();
+        }
+        catch (ApiException ex) { _errors = ex.Errors; }
+        catch (Exception ex) { Toasts.Error(ex); }
+        finally { _busy = false; }
+    }
+}

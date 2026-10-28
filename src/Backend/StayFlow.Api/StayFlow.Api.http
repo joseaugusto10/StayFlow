@@ -1,0 +1,14 @@
+@host = https://localhost:7001
+
+### Login (sets the HttpOnly accessToken cookie)
+POST {{host}}/api/auth
+Content-Type: application/json
+Accept-Language: pt-BR
+
+{ "email": "manager@stayflow.dev", "password": "Demo@1234", "remember": true }
+
+### Dashboard
+GET {{host}}/api/dashboard
+
+### Availability + price quotes
+GET {{host}}/api/rooms/availability?checkIn=2026-12-24&checkOut=2026-12-28&guests=2

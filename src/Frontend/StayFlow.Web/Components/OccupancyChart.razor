@@ -1,0 +1,26 @@
+@inherits LocalizedComponent
+<div class="chart">
+    @foreach (var point in Points)
+    {
+        <div class="bar-col" title="@L.F("chart.tooltip", Format.Date(point.Date), point.OccupiedRooms, Format.Percent(point.Rate))">
+            <span class="bar-value">@Format.Percent(point.Rate)</span>
+            <div class="bar-track">
+                <div class="bar @BarClass(point.Rate)" style="height:@(Math.Max(point.Rate, 2).ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+            </div>
+            <span class="bar-label @(point.Date.DayOfWeek is DayOfWeek.Friday or DayOfWeek.Saturday ? "weekend" : "")">
+                @Format.WeekDay(point.Date)<br />@Format.ShortDate(point.Date)
+            </span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public List<ResponseOccupancyPointJson> Points { get; set; } = [];
+
+    private static string BarClass(decimal rate) => rate switch
+    {
+        >= 85 => "bar-high",
+        >= 50 => "bar-mid",
+        _ => "bar-low"
+    };
+}

@@ -1,0 +1,52 @@
+@page "/register"
+@layout AuthLayout
+@inherits LocalizedComponent
+@inject ApiClient Api
+@inject ToastService Toasts
+@inject NavigationManager Navigation
+
+<PageTitle>@L["register.pageTitle"] · StayFlow</PageTitle>
+
+<div class="auth-card">
+    <h1>@L["register.title"]</h1>
+    <p class="muted">@L["register.subtitle"]</p>
+
+    <ErrorList Errors="_errors" />
+
+    <EditForm Model="_request" OnSubmit="Submit" FormName="register">
+        <div class="grid-2">
+            <label>@L["field.hotelName"] <InputText @bind-Value="_request.HotelName" /></label>
+            <label>@L["field.city"] <InputText @bind-Value="_request.City" /></label>
+        </div>
+        <label>@L["field.yourName"] <InputText @bind-Value="_request.Name" /></label>
+        <label>@L["field.email"] <InputText @bind-Value="_request.Email" type="email" /></label>
+        <label>@L["field.password"]
+            <InputText @bind-Value="_request.Password" type="password" autocomplete="new-password" />
+            <small class="muted">@L["register.passwordHint"]</small>
+        </label>
+        <button class="btn btn-primary btn-block" disabled="@_busy">@(_busy ? L["register.submitting"] : L["register.submit"])</button>
+    </EditForm>
+
+    <p class="muted center">@L["register.already"] <a href="login">@L["login.submit"]</a></p>
+</div>
+
+@code {
+    private readonly RequestRegisterUserAccountJson _request = new();
+    private IReadOnlyList<string> _errors = [];
+    private bool _busy;
+
+    private async Task Submit()
+    {
+        _busy = true;
+        _errors = [];
+        try
+        {
+            await Api.PostAsync("api/users/register", _request);
+            Toasts.Success(L["register.success"]);
+            Navigation.NavigateTo("login");
+        }
+        catch (ApiException ex) { _errors = ex.Errors; }
+        catch (HttpRequestException) { _errors = [L["error.apiUnreachable"]]; }
+        finally { _busy = false; }
+    }
+}

@@ -1,0 +1,68 @@
+@page "/login"
+@layout AuthLayout
+@inherits LocalizedComponent
+@inject ApiClient Api
+@inject StayFlowAuthStateProvider AuthState
+@inject NavigationManager Navigation
+
+<PageTitle>@L["login.pageTitle"] · StayFlow</PageTitle>
+
+<div class="auth-card">
+    <h1>@L["login.title"]</h1>
+    <p class="muted">@L["login.subtitle"]</p>
+
+    <ErrorList Errors="_errors" />
+
+    <EditForm Model="_request" OnSubmit="Submit" FormName="login">
+        <label>@L["field.email"]
+            <InputText @bind-Value="_request.Email" type="email" autocomplete="username" />
+        </label>
+        <label>@L["field.password"]
+            <InputText @bind-Value="_request.Password" type="password" autocomplete="current-password" />
+        </label>
+        <label class="check">
+            <InputCheckbox @bind-Value="_request.Remember" /> @L["login.remember"]
+        </label>
+        <button class="btn btn-primary btn-block" disabled="@_busy">@(_busy ? L["login.submitting"] : L["login.submit"])</button>
+    </EditForm>
+
+    <div class="demo-box">
+        <strong>@L["login.demoAccounts"]</strong> (@L["field.password"] <code>Demo@1234</code>)
+        <div class="demo-actions">
+            <button class="btn btn-ghost" @onclick='() => Fill("manager@stayflow.dev")'>@L.Enum(UserRole.Manager)</button>
+            <button class="btn btn-ghost" @onclick='() => Fill("frontdesk@stayflow.dev")'>@L.Enum(UserRole.Receptionist)</button>
+        </div>
+    </div>
+
+    <p class="muted center">@L["login.newProperty"] <a href="register">@L["login.createAccount"]</a></p>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
+    private readonly RequestLoginJson _request = new();
+    private IReadOnlyList<string> _errors = [];
+    private bool _busy;
+
+    private void Fill(string email)
+    {
+        _request.Email = email;
+        _request.Password = "Demo@1234";
+    }
+
+    private async Task Submit()
+    {
+        _busy = true;
+        _errors = [];
+        try
+        {
+            await Api.PostAsync<ResponseLoggedInJson>("api/auth", _request);
+            AuthState.Refresh();
+            await AuthState.GetAuthenticationStateAsync();
+            Navigation.NavigateTo(string.IsNullOrWhiteSpace(ReturnUrl) || ReturnUrl.StartsWith("login") ? "/" : ReturnUrl);
+        }
+        catch (ApiException ex) { _errors = ex.Errors; }
+        catch (HttpRequestException) { _errors = [L["error.apiUnreachable"]]; }
+        finally { _busy = false; }
+    }
+}

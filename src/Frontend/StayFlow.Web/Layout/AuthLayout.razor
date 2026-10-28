@@ -1,0 +1,19 @@
+@inherits LocalizedLayout
+
+<div class="auth-shell">
+    <section class="auth-hero">
+        <div class="brand"><span class="brand-mark">S</span> StayFlow</div>
+        <h2>@L["hero.title"]</h2>
+        <ul>
+            <li>@L["hero.feature1"]</li>
+            <li>@L["hero.feature2"]</li>
+            <li>@L["hero.feature3"]</li>
+        </ul>
+        <small>Blazor WebAssembly · ASP.NET Core · Clean Architecture</small>
+    </section>
+    <section class="auth-panel">
+        <div class="auth-lang"><LanguageSwitcher /></div>
+        @Body
+    </section>
+</div>
+<ToastHost />

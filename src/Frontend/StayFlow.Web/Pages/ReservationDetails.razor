@@ -1,0 +1,109 @@
+@page "/reservations/{Id:guid}"
+@attribute [Authorize]
+@inherits LocalizedComponent
+@inject ApiClient Api
+@inject ToastService Toasts
+
+<PageTitle>@L["details.pageTitle"] · StayFlow</PageTitle>
+
+@if (_data is null)
+{
+    <div class="boot"><div class="spinner"></div></div>
+}
+else
+{
+    <div class="page-head">
+        <div>
+            <a class="back" href="reservations">‹ @L["nav.reservations"]</a>
+            <h1>@_data.Code <StatusBadge Status="_data.Status" /></h1>
+            <p class="muted">@L.F("details.createdAt", Format.DateTimeLocal(_data.CreatedAt))</p>
+        </div>
+        <div class="actions">
+            @if (_data.CanCheckIn)
+            {
+                <button class="btn btn-primary" disabled="@_busy" @onclick='() => Act("check-in", L["toast.checkedIn"])'>@L["action.checkIn"]</button>
+            }
+            @if (_data.CanCheckOut)
+            {
+                <button class="btn btn-primary" disabled="@_busy" @onclick='() => Act("check-out", L["toast.checkedOut"])'>@L["action.checkOut"]</button>
+            }
+            @if (_data.CanCancel)
+            {
+                <button class="btn btn-danger" disabled="@_busy" @onclick='() => Act("cancel", L["toast.cancelled"])'>@L["action.cancel"]</button>
+            }
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <section class="card">
+            <h2>@L["details.stay"]</h2>
+            <dl>
+                <dt>@L["field.checkIn"]</dt><dd>@Format.Date(_data.CheckInDate)</dd>
+                <dt>@L["field.checkOut"]</dt><dd>@Format.Date(_data.CheckOutDate)</dd>
+                <dt>@L["details.nights"]</dt><dd>@_data.Nights</dd>
+                <dt>@L["col.guests"]</dt><dd>@L.F("details.party", _data.Adults, _data.Children)</dd>
+                <dt>@L["col.total"]</dt><dd><strong>@Format.Money(_data.TotalAmount)</strong></dd>
+            </dl>
+        </section>
+        <section class="card">
+            <h2>@L["col.guest"]</h2>
+            <dl>
+                <dt>@L["field.name"]</dt><dd>@_data.Guest.Name</dd>
+                <dt>@L["field.document"]</dt><dd>@_data.Guest.Document</dd>
+                <dt>@L["field.email"]</dt><dd>@_data.Guest.Email</dd>
+                <dt>@L["field.phone"]</dt><dd>@_data.Guest.Phone</dd>
+            </dl>
+        </section>
+        <section class="card">
+            <h2>@L["common.room"] @_data.Room.Number</h2>
+            <dl>
+                <dt>@L["field.type"]</dt><dd>@L.Enum(_data.Room.Type)</dd>
+                <dt>@L["field.floor"]</dt><dd>@_data.Room.Floor</dd>
+                <dt>@L["field.capacity"]</dt><dd>@_data.Room.Capacity</dd>
+                <dt>@L["details.baseRate"]</dt><dd>@Format.Money(_data.Room.NightlyRate)</dd>
+            </dl>
+        </section>
+    </div>
+
+    <section class="card">
+        <h2>@L["details.timeline"]</h2>
+        <ol class="timeline">
+            <li class="done">@L["timeline.booked"] · @Format.DateTimeLocal(_data.CreatedAt)</li>
+            @if (_data.CheckedInAt is not null) { <li class="done">@L["timeline.checkedIn"] · @Format.DateTimeLocal(_data.CheckedInAt.Value)</li> }
+            @if (_data.CheckedOutAt is not null) { <li class="done">@L["timeline.checkedOut"] · @Format.DateTimeLocal(_data.CheckedOutAt.Value)</li> }
+            @if (_data.CancelledAt is not null) { <li class="cancel">@L["timeline.cancelled"] · @Format.DateTimeLocal(_data.CancelledAt.Value)</li> }
+        </ol>
+        @if (string.IsNullOrWhiteSpace(_data.Notes) == false)
+        {
+            <p><strong>@L["field.notes"]:</strong> @_data.Notes</p>
+        }
+    </section>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ResponseReservationDetailsJson? _data;
+    private bool _busy;
+
+    protected override Task OnParametersSetAsync() => Load();
+
+    private async Task Load()
+    {
+        try { _data = await Api.GetAsync<ResponseReservationDetailsJson>($"api/reservations/{Id}"); }
+        catch (Exception ex) { Toasts.Error(ex); }
+    }
+
+    private async Task Act(string action, string message)
+    {
+        _busy = true;
+        try
+        {
+            await Api.PatchAsync($"api/reservations/{Id}/{action}");
+            Toasts.Success(message);
+            await Load();
+        }
+        catch (Exception ex) { Toasts.Error(ex); }
+        finally { _busy = false; }
+    }
+}
